@@ -127,7 +127,7 @@ class Game():
         self.remove_sprites()
         self.add_sprites()
         self.create_walls()
-        self.score = 0
+        self.text.score = 0
         self.game_status = 0
         
     #draw all surfaces on screen
@@ -156,6 +156,7 @@ class Game():
             self.text.update_text(0)
         else:
             self.draw_surfaces()
+            self.wall_out_bounds()
             self.update_sprite_pos()
             self.text.update_text(1)
         pygame.display.flip()
