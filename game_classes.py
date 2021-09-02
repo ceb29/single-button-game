@@ -224,8 +224,14 @@ class Game():
             self.player.kill()
             self.game_status = 1
 
+    def player_out_of_bounds(self):
+        if self.player.get_center_y() > self.height + 30 or self.player.get_center_y() < -30:
+            self.player.kill()
+            self.game_status = 1
+
     def check_for_collisions(self):
         self.wall_collisions()
+        self.player_out_of_bounds()
 
 #functions for high score
     def read_high_score(self):
