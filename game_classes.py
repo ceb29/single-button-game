@@ -1,6 +1,5 @@
 import pygame
 import random
-import math
 from pygame.constants import K_SPACE
 import sprite_classes
 from constants import *
@@ -33,6 +32,7 @@ class Game_Text():
     def set_high_score(self, high_score):
         self.high_score = high_score
 
+    #add spacing to keep numbers from overflowing onto text 
     def padding(self):
         if self.score / self.score_pad_num == 1:
             self.score_padding += 10
@@ -42,13 +42,15 @@ class Game_Text():
             self.high_score_padding += 10
             self.high_score_pad_num *= 10
 
+    #update score text and check if there is a new high score
     def update_score(self):
         self.padding()
         if self.score > self.high_score:
             self.high_score = self.score
         self.text_list[3] = self.font.render(str(self.score), False, COLOR_WHITE)
         self.text_list[4] = self.font.render(str(self.high_score), False, COLOR_WHITE)
-        
+
+    #create the text for pygame and make a list to hold them   
     def create_text(self):
         text_score = self.font.render('Score:', False, COLOR_WHITE)
         text_game_over = self.font.render('Game Over', False, COLOR_WHITE)
@@ -57,19 +59,23 @@ class Game_Text():
         high_score = self.font.render(str(self.high_score), False, COLOR_WHITE)
         self.text_list = [text_score, text_game_over, text_high_score, score, high_score]  
 
+    #functions for displaying text
+    def display_score(self):
+        self.win.blit(self.text_list[0], (5, 10)) #text_score
+        self.win.blit(self.text_list[2], (5, HEIGHT - 40))  #text_high_score
+        self.win.blit(self.text_list[3], (self.score_padding, 10))  #score
+        self.win.blit(self.text_list[4], (self.high_score_padding, HEIGHT - 40))  #high_score
+
+    def display_game_over(self):
+        self.win.blit(self.text_list[1], (self.game_over_width, self.game_over_height)) #text_game_over
+
+    #always display score and high score, if game status is 1 display game over and stop updating score
     def update_text(self, game_status):
         if game_status == 0:
-            self.update_score()
-            self.win.blit(self.text_list[0], (5, 10)) #text_score
-            self.win.blit(self.text_list[2], (0, HEIGHT - 40))  #text_high_score
-            self.win.blit(self.text_list[3], (self.score_padding, 10))  #score
-            self.win.blit(self.text_list[4], (self.high_score_padding, HEIGHT - 40))  #high_score
-        else:
-            self.win.blit(self.text_list[0], (5, 10)) #text_score
-            self.win.blit(self.text_list[3], (self.score_padding, 10))  #score
-            self.win.blit(self.text_list[1], (self.game_over_width, self.game_over_height)) #text_game_over
-            self.win.blit(self.text_list[2], (5, HEIGHT - 40)) #text_high_score
-            self.win.blit(self.text_list[4], (self.high_score_padding, HEIGHT - 40))  #high_score
+            self.update_score()   
+        elif game_status == 1:
+            self.display_game_over()
+        self.display_score()
 
 class Game():
     def __init__(self, clock_speed, rgb_tuple, win, width, height):
@@ -108,12 +114,9 @@ class Game():
     def remove_sprites(self):
         self.surfaces = pygame.sprite.Group()
 
-    def create_walls(self):
-        centerx = 48 + 96 * 8
-        number_of_walls = 13
-        for i in range(number_of_walls):
-            self.add_wall(centerx)
-            centerx += 96
+    def remove_walls(self):
+        for wall in self.walls:
+            wall.kill()
 
     #functions for game progression
     def start(self):
@@ -146,22 +149,23 @@ class Game():
     #main game function
     def update(self):
         self.win.fill(self.win_rgb)
-        #self.text.update_text(self.game_status)
+        self.text.update_text(self.game_status)
         if self.game_status == 0:
             self.draw_surfaces()
+            self.text.update_text(self.game_status)
             self.update_sprite_pos()
             self.wall_out_bounds()
             self.check_for_collisions()
             self.add_point()
-            self.text.update_text(0)
         else:
             self.draw_surfaces()
+            self.text.update_text(self.game_status)
             self.wall_out_bounds()
             self.update_sprite_pos()
-            self.text.update_text(1)
         pygame.display.flip()
         self.clock.tick_busy_loop(self.clock_speed) 
 
+    #functions for adding sprites
     def add_smoke(self):
         rand_x = random.randint(-5, 5)
         rand_y = random.randint(-5, 5)
@@ -199,10 +203,15 @@ class Game():
         self.surfaces.add(self.background)
         self.add_player()
 
-    def remove_walls(self):
-        for wall in self.walls:
-            wall.kill()
+    #create initial walls at the start of each game 
+    def create_walls(self):
+        centerx = 48 + 96 * 8
+        number_of_walls = 13
+        for i in range(number_of_walls):
+            self.add_wall(centerx)
+            centerx += 96
 
+    #add point when player passes a wall
     def add_point(self):
         for wall in self.top_walls:
             if wall.get_center_x() + 48 <= self.player_start[0] and wall.get_score_flag() == 0:
@@ -210,6 +219,7 @@ class Game():
                 wall.set_score_flag(1)
         self.text.update_score()
 
+    #if wall passes left side of screen delete it and add a new wall to the right side of the screen
     def wall_out_bounds(self):
         for wall in self.top_walls:
             if wall.get_center_x() - 48 <= 0 and wall.get_flag() == 0:
@@ -218,6 +228,7 @@ class Game():
             if wall.get_center_x() + 48 <= 0:
                 wall.kill()
 
+    #functions for collisions
     def wall_collisions(self):
         collision = pygame.sprite.spritecollideany(self.player, self.walls, collided=pygame.sprite.collide_mask)
         if collision != None:
@@ -233,7 +244,7 @@ class Game():
         self.wall_collisions()
         self.player_out_of_bounds()
 
-#functions for high score
+    #functions for high score
     def read_high_score(self):
         high_score_file = open('./high_score.txt', "r")
         self.text.set_high_score(int(high_score_file.read()))
