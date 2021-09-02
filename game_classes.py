@@ -104,18 +104,16 @@ class Game():
         return self.game_status
 
     #functions for cleaning up sprites
-    def remove_walls(self):
-        self.wall_list = []
-        for wall in self.wall_top:
-            wall.kill()
-        for wall in self.wall_bottom:
-            wall.kill()
-
     def remove_sprites(self):
         self.surfaces = pygame.sprite.Group()
 
     def remove_walls(self):
+        self.wall_list = []
         for wall in self.walls:
+            wall.kill()
+        for wall in self.top_walls:
+            wall.kill()
+        for wall in self.bottom_walls:
             wall.kill()
 
     #functions for game progression
@@ -142,7 +140,7 @@ class Game():
     def update_sprite_pos(self):
         pressed_key = pygame.key.get_pressed()
         self.smoke.update()
-        if self.player.update(pressed_key) == 1:
+        if self.player.update(pressed_key) == 1 and self.game_status == 0:
             self.add_smoke()
         self.walls.update()
         
